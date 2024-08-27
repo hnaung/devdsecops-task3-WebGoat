@@ -1,0 +1,85 @@
+name: DevSecOps Pipeline
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  security-scans:
+    runs-on: ubuntu-latest
+    env:
+      ACTIONS_STEP_DEBUG: true
+      ACTIONS_RUNNER_DEBUG: true
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Clone Repository
+        uses: actions/checkout@v3
+        with:
+          repository: hnaung/devsecops-task3-WebGoat
+
+      - name: Run SAST Scan by using Snyk
+        run: |
+          mvn -N io.takari:maven:wrapper
+          mvn validate
+          npm install -g snyk
+          echo "JAVA_HOME is set to $JAVA_HOME"
+          ls -al
+          mkdir -p reports || { echo 'Directory creation failed'; exit 1; }
+          snyk code test --json > reports/snyk-sast-scan-report.json || echo "Snyk sast scan completed"
+          snyk test --json > reports/snyk-dependency-scan-report.json || echo "Snyk depedency scan completed"
+          git config --global user.email "unixaung@gmail.com"
+          git config --global user.name "hnaung"
+          git fetch origin
+          git checkout master
+          git pull origin master
+          git reset --hard HEAD
+          git add reports/
+          if git diff --cached --quiet; then
+            echo "No changes detected, skipping commit and push."
+          else
+            git commit -m "Snyk Scans Report"
+            git push origin master || echo "Git push failed. No changes to push."
+          fi
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
+
+      - name: Run Hardcoded Passwords or Sensitive Information Scanning
+        run: |
+          mvn -N io.takari:maven:wrapper
+          mvn validate
+          pip install trufflehog          
+          echo "Creating reports directory if it doesn't exist..."
+          mkdir -p reports || { echo 'Directory creation failed'; exit 1; }
+          echo "Running TruffleHog scan..."
+          trufflehog filesystem --repo_path=. --entropy=True --rules=trufflehog-rules.json --json > reports/trufflehog-report.json || echo "Scan Completed"
+          echo "Checking if the TruffleHog report was created..."
+          ls -l reports/trufflehog-report.json || { echo 'Report does not exist'; exit 1; }
+
+      - name: Failed build process in case of any high-severity vulnerability findings.
+        run: |
+          mkdir -p reports || { echo 'Directory creation failed'; exit 1; }
+          ls -al
+          snyk test --json > reports/snyk-dependency-scan-report.json || echo "Snyk dependency scan completed with issues"
+          
+          # Check for high-severity issues using grep
+          HIGH_SEVERITY_ISSUES=$(grep -c '"severity": "high"' reports/snyk-dependency-scan-report.json || true)
+      
+          if [ "$HIGH_SEVERITY_ISSUES" -gt 0 ]; then
+            echo "High severity issues found: $HIGH_SEVERITY_ISSUES"
+            exit 1
+          else
+            echo "No high severity issues found or string not present, moving forward."
+          fi
+
