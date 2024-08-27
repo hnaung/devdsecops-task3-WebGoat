@@ -1,155 +1,92 @@
-# WebGoat: A deliberately insecure Web Application
+# Task 3: Integration of DevSecOps Scanning Processes
 
-[![Build](https://github.com/WebGoat/WebGoat/actions/workflows/build.yml/badge.svg?branch=develop)](https://github.com/WebGoat/WebGoat/actions/workflows/build.yml)
-[![java-jdk](https://img.shields.io/badge/java%20jdk-17-green.svg)](https://jdk.java.net/)
-[![OWASP Labs](https://img.shields.io/badge/OWASP-Lab%20project-f7b73c.svg)](https://owasp.org/projects/)
-[![GitHub release](https://img.shields.io/github/release/WebGoat/WebGoat.svg)](https://github.com/WebGoat/WebGoat/releases/latest)
-[![Gitter](https://badges.gitter.im/OWASPWebGoat/community.svg)](https://gitter.im/OWASPWebGoat/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
-[![Discussions](https://img.shields.io/github/discussions/WebGoat/WebGoat)](https://github.com/WebGoat/WebGoat/discussions)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+## 1. Overview
+This document outlines the steps and configurations involved in integrating various DevSecOps security scanning processes into the CI/CD pipeline for a three-tier application deployment using the WebGoat application source code. The objective is to ensure the security of both the Terraform infrastructure code and the deployed application code by identifying vulnerabilities, misconfigurations, and other security issues.
 
-# Introduction
+## 2. Project Setup
+- **Repository:** Forked from WebGoat GitHub Repository
+- **CI/CD Tool:** GitHub Actions
+- **Security Scanning Tools:** Snyk, TruffleHog
 
-WebGoat is a deliberately insecure web application maintained by [OWASP](http://www.owasp.org/) designed to teach web
-application security lessons.
+## 3. CI/CD Pipeline Configuration
+The CI/CD pipeline is configured using GitHub Actions. The pipeline triggers on a pull request to the master branch. 
+The pipeline includes various security scanning steps. For detailed information, you can view the workflow configuration at the following link:
 
-This program is a demonstration of common server-side application flaws. The
-exercises are intended to be used by people to learn about application security and
-penetration testing techniques.
+[Main Workflow Configuration](https://github.com/hnaung/devsecops-task3-WebGoat/blob/master/.github/workflows/main.yml)
 
-**WARNING 1:** *While running this program your machine will be extremely
-vulnerable to attack. You should disconnect from the Internet while using
-this program.*  WebGoat's default configuration binds to localhost to minimize
-the exposure.
+## 4. Security Scanning Processes
+The following security scanning processes are integrated into the CI/CD pipeline:
 
-**WARNING 2:** *This program is for educational purposes only. If you attempt
-these techniques without authorization, you are very likely to get caught. If
-you are caught engaging in unauthorized hacking, most companies will fire you.
-Claiming that you were doing security research will not work as that is the
-first thing that all hackers claim.*
+### Static Application Security Testing (SAST)
+- **Tool:** Snyk
+- **Description:** Snyk scans the application source code for security vulnerabilities and coding best practices.
+- **Report:** `reports/snyk-sast-scan-report.json`
 
-![WebGoat](docs/images/webgoat.png)
+### Dependency Checking
+- **Tool:** Snyk
+- **Description:** Snyk scans the application dependencies for any known vulnerabilities.
+- **Report:** `reports/snyk-dependency-scan-report.json`
 
-# Installation instructions:
+### Password and Sensitive Information Scanning
+- **Tool:** TruffleHog
+- **Description:** TruffleHog scans the source code and Terraform scripts for hardcoded passwords or sensitive information. A custom rule set is used to detect various sensitive credentials, such as AWS API keys, SSH private keys, OAuth tokens, and more.
+- **Custom Rules Configuration:** `trufflehog-rules.json`
 
-For more details check [the Contribution guide](/CONTRIBUTING.md)
+- **Report:** `reports/trufflehog-report.json`
 
-## 1. Run using Docker
+### Container Scanning
+- **Not applicable in this task as Docker images are not used.**
 
-Already have a browser and ZAP and/or Burp installed on your machine in this case you can run the WebGoat image directly using Docker.
+## 5. Pipeline Configuration
+- **Trigger:** The CI/CD pipeline is configured to trigger on a pull request to the master branch.
+- **Build Halt:** The pipeline is configured to halt the build process if any high-severity vulnerabilities are found during the dependency checking process.
+- **Reports Directory:** All scan reports are stored in the `reports` directory within the application source code repository.
 
-Every release is also published on [DockerHub](https://hub.docker.com/r/webgoat/webgoat).
+## 6. Accessing and Interpreting Scan Reports
+All scan reports generated by the pipeline are stored in the `reports` directory. To access these reports:
 
-```shell
-docker run -it -p 127.0.0.1:8080:8080 -p 127.0.0.1:9090:9090 webgoat/webgoat
-```
+1. Navigate to the `reports` directory in the GitHub repository.
+2. Open the desired report (`snyk-sast-scan-report.json`, `snyk-dependency-scan-report.json`, or `trufflehog-report.json`) to review the results.
 
-For some lessons you need the container run in the same timezone. For this you can set the TZ environment variable.
-E.g.
+Each report is in JSON format, providing detailed information about identified vulnerabilities or issues, including severity levels and recommendations for remediation.
 
-```shell
-docker run -it -p 127.0.0.1:8080:8080 -p 127.0.0.1:9090:9090 -e TZ=America/Boise webgoat/webgoat
-```
+### 7. Token Configuration
+To ensure the security scanning processes function correctly within the CI/CD pipeline, you'll need to configure the following tokens:
 
-If you want to use OWASP ZAP or another proxy, you can no longer use 127.0.0.1 or localhost. but
-you can use custom host entries. For example:
+## GitHub Personal Access Token (GH_TOKEN)
 
-```shell
-127.0.0.1 www.webgoat.local www.webwolf.local
-```
+The GitHub Personal Access Token is required to authenticate with the GitHub API, allowing the pipeline to push reports and updates to the repository.
 
-Then you can run the container with:
+### How to Obtain:
 
-```shell
-docker run -it -p 127.0.0.1:8080:8080 -p 127.0.0.1:9090:9090 -e WEBGOAT_HOST=www.webgoat.local -e WEBWOLF_HOST=www.webwolf.local -e TZ=America/Boise webgoat/webgoat
-```
+1. Go to your GitHub account settings.
+2. Navigate to **Developer settings** > **Personal access tokens** > **Tokens (classic)**.
+3. Click on **Generate new token**.
+4. Select the necessary scopes, such as `repo` for full control of private repositories.
+5. Click on **Generate token** and copy the token.
 
-Then visit http://www.webgoat.local:8080/WebGoat/ and http://www.webwolf.local:9090/WebWolf/
+### Usage:
 
-## 2. Run using Docker with complete Linux Desktop
+Store the token securely in your GitHub repository secrets as `GH_TOKEN`.
 
-Instead of installing tools locally we have a complete Docker image based on running a desktop in your browser. This way you only have to run a Docker image which will give you the best user experience.
+## Snyk API Token (SNYK_TOKEN)
 
-```shell
-docker run -p 127.0.0.1:3000:3000 webgoat/webgoat-desktop
-```
+The Snyk API Token is required to authenticate with Snyk for performing security scans.
 
-## 3. Standalone
+### How to Obtain:
 
-Download the latest WebGoat release from [https://github.com/WebGoat/WebGoat/releases](https://github.com/WebGoat/WebGoat/releases)
+1. Sign in to your Snyk account.
+2. Navigate to your **Account settings**.
+3. Under the **API token** section, click **Generate** to create a new token.
+4. Copy the generated token.
 
-```shell
-export TZ=Europe/Amsterdam # or your timezone
-java -Dfile.encoding=UTF-8 -jar webgoat-2023.5.jar
-```
+### Usage:
 
-Click the link in the log to start WebGoat.
+Store the token securely in your GitHub repository secrets as `SNYK_TOKEN`.
 
-## 4. Run from the sources
+## Reference Documentation:
 
-### Prerequisites:
+For more details on obtaining and authenticating with your Snyk API Token, refer to the [Snyk Documentation](https://snyk.io/docs/).
 
-* Java 17 or 21
-* Your favorite IDE
-* Git, or Git support in your IDE
-
-Open a command shell/window:
-
-```Shell
-git clone git@github.com:WebGoat/WebGoat.git
-```
-
-Now let's start by compiling the project.
-
-```Shell
-cd WebGoat
-git checkout <<branch_name>>
-# On Linux/Mac:
-./mvnw clean install
-
-# On Windows:
-./mvnw.cmd clean install
-
-# Using docker or podman, you can than build the container locally
-docker build -f Dockerfile . -t webgoat/webgoat
-```
-
-Now we are ready to run the project. WebGoat is using Spring Boot.
-
-```Shell
-# On Linux/Mac:
-./mvnw spring-boot:run
-# On Windows:
-./mvnw.cmd spring-boot:run
-
-```
-
-... you should be running WebGoat on http://localhost:8080/WebGoat momentarily.
-
-Note: The above link will redirect you to login page if you are not logged in. LogIn/Create account to proceed.
-
-To change the IP address add the following variable to the `WebGoat/webgoat-container/src/main/resources/application.properties` file:
-
-```
-server.address=x.x.x.x
-```
-
-## 4. Run with custom menu
-
-For specialist only. There is a way to set up WebGoat with a personalized menu. You can leave out some menu categories or individual lessons by setting certain environment variables.
-
-For instance running as a jar on a Linux/macOS it will look like this:
-
-```Shell
-export TZ=Europe/Amsterdam # or your timezone
-export EXCLUDE_CATEGORIES="CLIENT_SIDE,GENERAL,CHALLENGE"
-export EXCLUDE_LESSONS="SqlInjectionAdvanced,SqlInjectionMitigations"
-java -jar target/webgoat-2023.6-SNAPSHOT.jar
-```
-
-Or in a docker run it would (once this version is pushed into docker hub) look like this:
-
-```Shell
-docker run -d -p 127.0.0.1:8080:8080 -p 127.0.0.1:9090:9090 -e EXCLUDE_CATEGORIES="CLIENT_SIDE,GENERAL,CHALLENGE" -e EXCLUDE_LESSONS="SqlInjectionAdvanced,SqlInjectionMitigations" webgoat/webgoat
-```
-
+## 8. Conclusion
+This CI/CD pipeline ensures the security of the WebGoat application by automating the security scanning processes. The integration of Snyk and TruffleHog within the pipeline allows for continuous monitoring of the codebase for vulnerabilities, enhancing the overall security posture of the application.
