@@ -1,0 +1,12 @@
+MissingApiTokenError: `snyk` requires an authenticated account. Please run `snyk auth` and try again.
+    at apiTokenExists (/snapshot/snyk/dist/cli/webpack:/snyk/src/lib/api-token.ts:22:11)
+    at validateCredentials (/snapshot/snyk/dist/cli/webpack:/snyk/src/cli/commands/test/validate-credentials.ts:10:19)
+    at test (/snapshot/snyk/dist/cli/webpack:/snyk/src/cli/commands/test/index.ts:81:22)
+    at callModule (/snapshot/snyk/dist/cli/webpack:/snyk/src/cli/commands/index.js:6:1)
+    at process.runNextTicks [as _tickCallback] (node:internal/process/task_queues:60:5)
+    at Function.runMain (pkg/prelude/bootstrap.js:1984:13)
+    at node:internal/main/run_main_module:17:47
+    at runCommand (/snapshot/snyk/dist/cli/webpack:/snyk/src/cli/main.ts:56:25)
+    at main (/snapshot/snyk/dist/cli/webpack:/snyk/src/cli/main.ts:343:11)
+    at /snapshot/snyk/dist/cli/webpack:/snyk/src/cli/index.ts:13:3
+    at callHandlingUnexpectedErrors (/snapshot/snyk/dist/cli/webpack:/snyk/src/lib/unexpected-error.ts:28:5)
