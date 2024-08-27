@@ -72,18 +72,58 @@ jobs:
           fi
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
-
+      
       - name: Run Hardcoded Passwords or Sensitive Information Scanning
         run: |
           mvn -N io.takari:maven:wrapper
           mvn validate
-          pip install trufflehog          
+          pip install trufflehog
           echo "Creating reports directory if it doesn't exist..."
           mkdir -p reports || { echo 'Directory creation failed'; exit 1; }
+          
           echo "Running TruffleHog scan..."
           trufflehog filesystem --repo_path=. --entropy=True --rules=trufflehog-rules.json --json > reports/trufflehog-report.json || echo "Scan Completed"
+          
           echo "Checking if the TruffleHog report was created..."
-          ls -l reports/trufflehog-report.json || { echo 'Report does not exist'; exit 1; }
+          if [ -f "reports/trufflehog-report.json" ]; then
+            echo "TruffleHog report exists."
+          else
+            echo "Report does not exist"
+            exit 1
+          fi
+          
+          echo "Configuring Git..."
+          git config --global user.email "unixaung@gmail.com"
+          git config --global user.name "hnaung"
+          
+          # Safely handle existing files and checkout
+          if [ -f "reports/trufflehog-report.json" ]; then
+            echo "Removing existing TruffleHog report to avoid conflicts during checkout..."
+            rm reports/trufflehog-report.json
+          fi
+          
+          echo "Checking out master branch..."
+          git fetch origin
+          git checkout master
+          git pull origin master
+          
+          echo "Resetting any local changes..."
+          git reset --hard HEAD
+          
+          echo "Adding the TruffleHog report to Git..."
+          git add reports/trufflehog-report.json
+          
+          echo "Checking if there are any changes to commit..."
+          if git diff --cached --quiet; then
+            echo "No changes detected, skipping commit and push."
+          else
+            echo "Committing and pushing the changes..."
+            git commit -m "Add TruffleHog scan report"
+            git push origin master || echo "Git push failed. No changes to push."
+          fi
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
+      
 
       - name: Failed build process in case of any high-severity vulnerability findings.
         run: |
