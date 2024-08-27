@@ -1,9 +1,10 @@
 name: DevSecOps Pipeline
 
 on:
-  pull_request:
-    branches:
-      - master
+  push
+  #pull_request:
+    #branches:
+      #- master
 
 jobs:
   security-scans:
@@ -72,12 +73,26 @@ jobs:
           fi
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
-      
+            
       - name: Run Hardcoded Passwords or Sensitive Information Scanning
         run: |
           mvn -N io.takari:maven:wrapper
           mvn validate
           pip install trufflehog
+          
+          echo "Configuring Git..."
+          git config --global user.email "unixaung@gmail.com"
+          git config --global user.name "hnaung"
+          
+          # Safely handle existing files and checkout
+          echo "Checking out master branch..."
+          git fetch origin
+          git checkout master
+          git pull origin master
+          
+          echo "Resetting any local changes..."
+          git reset --hard HEAD
+          
           echo "Creating reports directory if it doesn't exist..."
           mkdir -p reports || { echo 'Directory creation failed'; exit 1; }
           
@@ -92,24 +107,6 @@ jobs:
             exit 1
           fi
           
-          echo "Configuring Git..."
-          git config --global user.email "unixaung@gmail.com"
-          git config --global user.name "hnaung"
-          
-          # Safely handle existing files and checkout
-          if [ -f "reports/trufflehog-report.json" ]; then
-            echo "Removing existing TruffleHog report to avoid conflicts during checkout..."
-            rm reports/trufflehog-report.json
-          fi
-          
-          echo "Checking out master branch..."
-          git fetch origin
-          git checkout master
-          git pull origin master
-          
-          echo "Resetting any local changes..."
-          git reset --hard HEAD
-          
           echo "Adding the TruffleHog report to Git..."
           git add reports/trufflehog-report.json
           
@@ -123,6 +120,7 @@ jobs:
           fi
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
+
       
 
       - name: Failed build process in case of any high-severity vulnerability findings.
