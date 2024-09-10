@@ -62,14 +62,16 @@ jobs:
           # Reset and stage the reports
           git reset --hard HEAD
           git add reports/
+          git commit -m "Snyk Scans Report"
+          git push origin master
           
-          # Commit and push if there are changes
-          if git diff --cached --quiet; then
-            echo "No changes detected, skipping commit and push."
-          else
-            git commit -m "Snyk Scans Report"
-            git push origin master || echo "Git push failed. No changes to push."
-          fi
+          # # Commit and push if there are changes
+          # if git diff --cached --quiet; then
+          #   echo "No changes detected, skipping commit and push."
+          # else
+          #   git commit -m "Snyk Scans Report"
+          #   git push origin master || echo "Git push failed. No changes to push."
+          # fi
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
             
@@ -108,15 +110,17 @@ jobs:
           
           echo "Adding the TruffleHog report to Git..."
           git add reports/trufflehog-report.json
+          git commit -m "Add TruffleHog scan report"
+           git push origin master 
           
-          echo "Checking if there are any changes to commit..."
-          if git diff --cached --quiet; then
-            echo "No changes detected, skipping commit and push."
-          else
-            echo "Committing and pushing the changes..."
-            git commit -m "Add TruffleHog scan report"
-            git push origin master || echo "Git push failed. No changes to push."
-          fi
+          # echo "Checking if there are any changes to commit..."
+          # if git diff --cached --quiet; then
+          #   echo "No changes detected, skipping commit and push."
+          # else
+          #   echo "Committing and pushing the changes..."
+          #   git commit -m "Add TruffleHog scan report"
+          #   git push origin master || echo "Git push failed. No changes to push."
+          # fi
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
 
