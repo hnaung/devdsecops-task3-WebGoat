@@ -48,12 +48,12 @@ jobs:
           git config --global user.email "unixaung@gmail.com"
           git config --global user.name "hnaung"
           
-          # Safely handle existing files and checkout
-          if [ -f "reports/snyk-sast-scan-report.json" ] || [ -f "reports/snyk-dependency-scan-report.json" ]; then
-            echo "Removing existing report files to prevent conflict during checkout"
-            rm reports/snyk-sast-scan-report.json
-            rm reports/snyk-dependency-scan-report.json
-          fi
+          # # Safely handle existing files and checkout
+          # if [ -f "reports/snyk-sast-scan-report.json" ] || [ -f "reports/snyk-dependency-scan-report.json" ]; then
+          #   echo "Removing existing report files to prevent conflict during checkout"
+          #   rm reports/snyk-sast-scan-report.json
+          #   rm reports/snyk-dependency-scan-report.json
+          # fi
           
           git fetch origin
           git checkout master
